@@ -7,6 +7,7 @@
 //
 
 #import "LPGViewController.h"
+#import "Pet.h"
 
 @interface LPGViewController ()
 
@@ -14,6 +15,7 @@
 @property (nonatomic) UIImageView *bucketImageView;
 @property (nonatomic) UIImageView *appleImageView;
 @property (nonatomic) UIImageView *movingAppleView;
+@property (nonatomic) Pet* pet;
 
 @end
 
@@ -21,6 +23,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    self.pet = [[Pet alloc] init];
+    [self.pet runRestfulnessTimer];
 	
     self.view.backgroundColor = [UIColor colorWithRed:(252.0/255.0) green:(240.0/255.0) blue:(228.0/255.0) alpha:1.0];
     
@@ -36,7 +41,6 @@
     self.appleImageView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.appleImageView setUserInteractionEnabled:YES];
     
-    
     self.petImageView.image = [UIImage imageNamed:@"default"];
     self.bucketImageView.image = [UIImage imageNamed:@"bucket"];
     self.appleImageView.image = [UIImage imageNamed:@"apple"];
@@ -44,6 +48,9 @@
     [self.view addSubview:self.petImageView];
     [self.view addSubview:self.bucketImageView];
     [self.view addSubview:self.appleImageView];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(defaultPetImageSet) name:@"changeToDefaultImage" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(sleepingImageSet) name:@"changeToSleepingImage" object:nil];
     
                                 ////////////////CAT CONSTRAINTS///////////////
     
@@ -150,7 +157,6 @@
     
 }
 
-
 - (void)panDetected:(UIPanGestureRecognizer *)sender {
     
     //another method to check velocity using 'fabs'...
@@ -160,53 +166,66 @@
     
     if ((pet.x > 400 || pet.x < -400) && (pet.y > 400 || pet.y < -400)) {
         self.petImageView.image = [UIImage imageNamed:@"grumpy"];
+        [NSTimer scheduledTimerWithTimeInterval:5 target:self selector:@selector(defaultPetImageSet) userInfo:nil repeats:NO];
+        
     }
 }
 
+- (void) sleepingImageSet {
+    
+    self.petImageView.image = [UIImage imageNamed:@"sleeping"];
+    
+}
 
-    - (void)longPressDetected:(UILongPressGestureRecognizer *)sender {
-        
-        CGPoint location = [sender locationInView:self.view];
-       NSLog(@"pinch recognised");
-        switch (sender.state) {
+- (void) defaultPetImageSet {
+    
+    self.petImageView.image = [UIImage imageNamed:@"default"];
+}
+
+
+- (void)longPressDetected:(UILongPressGestureRecognizer *)sender {
+    
+    CGPoint location = [sender locationInView:self.view];
+    NSLog(@"pinch recognised");
+    switch (sender.state) {
             
-            case UIGestureRecognizerStateBegan: {
-
-                self.movingAppleView = [[UIImageView alloc] initWithFrame:sender.view.bounds];
-                self.movingAppleView.center = [sender locationInView:self.view];
-                self.movingAppleView.userInteractionEnabled = NO;
-                self.movingAppleView.image = self.appleImageView.image;
-                [self.view addSubview:self.movingAppleView];
-            }
-                
-            case UIGestureRecognizerStateChanged: {
-                
-                NSLog(@"YOU GOT IT");
+        case UIGestureRecognizerStateBegan: {
+            
+            self.movingAppleView = [[UIImageView alloc] initWithFrame:sender.view.bounds];
+            self.movingAppleView.center = [sender locationInView:self.view];
+            self.movingAppleView.userInteractionEnabled = NO;
+            self.movingAppleView.image = self.appleImageView.image;
+            [self.view addSubview:self.movingAppleView];
+        }
+            
+        case UIGestureRecognizerStateChanged: {
+            
+            NSLog(@"YOU GOT IT");
+            self.movingAppleView.center = location;
+        }
+            break;
+            
+        case UIGestureRecognizerStateEnded: {
+            
+            if (CGRectIntersectsRect(self.movingAppleView.frame, self.petImageView.frame)) {
                 self.movingAppleView.center = location;
-            }
-                break;
+                [self.movingAppleView removeFromSuperview];
                 
-            case UIGestureRecognizerStateEnded: {
+            } else {
                 
-                if (CGRectIntersectsRect(self.movingAppleView.frame, self.petImageView.frame)) {
-                    self.movingAppleView.center = location;
+                [UIView animateWithDuration:0.5 animations:^ {
+                    self.movingAppleView.center = CGPointMake(location.x, [[UIScreen mainScreen] bounds].size.height+50);
+                    
+                } completion:^(BOOL finished) {
                     [self.movingAppleView removeFromSuperview];
-                    
-                } else {
-                    
-                    [UIView animateWithDuration:0.5 animations:^ {
-                        self.movingAppleView.center = CGPointMake(location.x, [[UIScreen mainScreen] bounds].size.height+50);
-                        
-                    } completion:^(BOOL finished) {
-                        [self.movingAppleView removeFromSuperview];
-                        self.movingAppleView = nil;
-                    }];
-                }
-            default:
-                break;
+                    self.movingAppleView = nil;
+                }];
             }
+        default:
+            break;
         }
     }
+}
 
 
 

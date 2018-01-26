@@ -10,4 +10,11 @@
 
 @interface Pet : NSObject
 
+@property (nonatomic) NSInteger currentRestfulness;
+@property (nonatomic) NSTimer* timer;
+
+- (void) decreaseRestfulness;
+- (void) runRestfulnessTimer;
+
+
 @end
